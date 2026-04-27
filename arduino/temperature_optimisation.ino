@@ -20,8 +20,10 @@ float magnitudeData[sampleCount];
 const float activeSamplingRateHz = 1.0;
 const float idleSamplingRateHz = 0.2;
 const float powerDownSamplingRateHz = 0.03; 
-// create an enumerator in order to have the 3 power modes as constant values
 
+float dominantFrequency = 0.0;
+
+// create an enumerator in order to have the 3 power modes as constant values
 enum powerMode
 {
   Active, 
@@ -29,8 +31,11 @@ enum powerMode
   Power_down
 };
 
+// starting power mode 
 powerMode currentMode = Active;
-float dominantFrequency = 0.0;
+
+int cycleCount = 0;
+const int stableCyclesRequired = 5;
 
 // just prints current mode to serial monitor
 const char* mode2string(powerMode mode)
@@ -53,6 +58,13 @@ const char* mode2string(powerMode mode)
 const float lowVarThreshold = 0.05;
 const float highVarThreshold = 0.20;
 
+// var's for the moving average calculation
+const int trendWindow = 10;
+float variationHistory[trendWindow];
+int variationIndex = 0;
+int variationCount = 0;
+float predictedVariation = 0.0;
+
 void setup() 
 {
   Serial.begin(9600);
@@ -65,15 +77,17 @@ void loop()
   collect_temperature_data();
 
   float averageVariation = calculate_temperature_variation();
+  predictedVariation = update_moving_average(averageVariation);
+
 
   apply_dft();
   dominantFrequency = find_dominant_freq();
 
-  currentMode = decideMode(averageVariation, dominantFrequency);
+  currentMode = decide_power_mode(predictedVariation, dominantFrequency);
 
   send_data_to_pc();
 
-  updateSamplingRate(currentMode);
+  update_sampling_rate(currentMode, dominantFrequency);
 
   Serial.print("Average temperature variation: ");
   Serial.println(averageVariation);
@@ -82,12 +96,15 @@ void loop()
   Serial.print(dominantFrequency);
   Serial.println(" Hz");
   
-  Serial.print("Selected power mode & sampling rate:");
+  Serial.print("Selected power mode: ");
   Serial.println(mode2string(currentMode));
 
   Serial.print("Sampling rate for next cycle: ");
   Serial.print(samplingRateHz);
   Serial.println(" Hz");
+  
+  Serial.print("Predicted variation trend: ");
+  Serial.println(predictedVariation);
   
   Serial.println("Temperature collection cycle has finished");
   Serial.println();
@@ -137,36 +154,59 @@ void collect_temperature_data()
     delay(sampleInterval);
   }
 }
-powerMode decideMode(float averageVariation, float dominantFrequency)
+powerMode decide_power_mode(float variationTrend, float dominantFrequency)
 {
-  if(dominantFrequency > 0.5 || averageVariation > highVarThreshold)
+  if(dominantFrequency > 0.5 || variationTrend > highVarThreshold)
   {
+    cycleCount = 0;
     return Active;
   }
-  else if(dominantFrequency > 0.1 ||averageVariation > lowVarThreshold)
+  else if(dominantFrequency > 0.1 || variationTrend > lowVarThreshold)
   {
+    cycleCount = 0;
     return Idle;
   }
   else
   {
+    cycleCount++;
+  }
+  if(cycleCount >= stableCyclesRequired)
+  {
     return Power_down;
-  }
-}
-
-void updateSamplingRate(powerMode mode)
-{
-  if(mode == Active)
-  {
-    samplingRateHz = activeSamplingRateHz;
-  }
-  else if(mode == Idle)
-  {
-    samplingRateHz = idleSamplingRateHz;
   }
   else
   {
-    samplingRateHz = powerDownSamplingRateHz;
+    return Idle;
   }
+}
+
+void update_sampling_rate(powerMode mode, float dominantFrequency)
+{
+  float nyquistRate = dominantFrequency * 2.0;
+  float targetRate;
+
+  if(mode == Active)
+  {
+    targetRate = activeSamplingRateHz;
+  }
+  else if(mode == Idle)
+  {
+    targetRate = idleSamplingRateHz;
+  }
+  else
+  {
+    targetRate = powerDownSamplingRateHz;
+  }
+  // make sure that the sampling rate is at least 2x dom frequency
+  if(nyquistRate > targetRate)
+  {
+    targetRate = nyquistRate;
+  }
+  if(targetRate > 4.0)
+  {
+    targetRate = 4.0;
+  }
+  samplingRateHz = targetRate;
 }
 
 float calculate_temperature_variation() 
@@ -177,6 +217,27 @@ float calculate_temperature_variation()
     difference += fabs(temperatureData[i] - temperatureData[i - 1]);
   }
   return difference / (sampleCount - 1);
+}
+
+float update_moving_average(float newVariation)
+{
+  variationHistory[variationIndex] = newVariation;
+  
+  variationIndex = (variationIndex + 1) % trendWindow;
+
+  if(variationCount < trendWindow)
+  {
+    variationCount++;
+  }
+  
+  float total = 0.0;
+
+  for(int i = 0; i < variationCount; i++)
+  {
+    total += variationHistory[i];
+  }
+
+  return total / variationCount;
 }
 
 float* apply_dft()
