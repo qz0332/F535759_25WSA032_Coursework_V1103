@@ -12,11 +12,16 @@ float samplingRateHz = 1.0; // default into active mode
 // list of all samples
 float temperatureData[sampleCount];
 
+// dft arrays to display complete dft spectrum
+float frequencyData[sampleCount];
+float magnitudeData[sampleCount];
+
 // sample rates for each power mode
 const float activeSamplingRateHz = 1.0;
 const float idleSamplingRateHz = 0.2;
 const float powerDownSamplingRateHz = 0.03; 
 // create an enumerator in order to have the 3 power modes as constant values
+
 enum powerMode
 {
   Active, 
@@ -25,6 +30,7 @@ enum powerMode
 };
 
 powerMode currentMode = Active;
+float dominantFrequency = 0.0;
 
 // just prints current mode to serial monitor
 const char* mode2string(powerMode mode)
@@ -60,7 +66,10 @@ void loop()
 
   float averageVariation = calculate_temperature_variation();
 
-  currentMode = decideMode(averageVariation);
+  apply_dft();
+  dominantFrequency = find_dominant_freq();
+
+  currentMode = decideMode(averageVariation, dominantFrequency);
 
   send_data_to_pc();
 
@@ -68,6 +77,10 @@ void loop()
 
   Serial.print("Average temperature variation: ");
   Serial.println(averageVariation);
+
+  Serial.print("Dominant frequency: ");
+  Serial.print(dominantFrequency);
+  Serial.println(" Hz");
   
   Serial.print("Selected power mode & sampling rate:");
   Serial.println(mode2string(currentMode));
@@ -124,13 +137,13 @@ void collect_temperature_data()
     delay(sampleInterval);
   }
 }
-powerMode decideMode(float averageVariation)
+powerMode decideMode(float averageVariation, float dominantFrequency)
 {
-  if(averageVariation > highVarThreshold)
+  if(dominantFrequency > 0.5 || averageVariation > highVarThreshold)
   {
     return Active;
   }
-  else if(averageVariation > lowVarThreshold)
+  else if(dominantFrequency > 0.1 ||averageVariation > lowVarThreshold)
   {
     return Idle;
   }
@@ -166,16 +179,56 @@ float calculate_temperature_variation()
   return difference / (sampleCount - 1);
 }
 
+float* apply_dft()
+{
+  for(int k=0; k < sampleCount; k++)
+  {
+    float real = 0.0;
+    float imaginary = 0.0;
+
+    for(int n =0; n < sampleCount; n++)
+    {
+      float angle = 2.0 * PI * k * n / sampleCount;
+
+      real += temperatureData[n] * cos(angle);
+      imaginary -= temperatureData[n] * sin(angle);
+    }
+    magnitudeData[k] = sqrt(real * real+ imaginary * imaginary);
+    frequencyData[k] = (k * samplingRateHz) / sampleCount;
+  }
+  return frequencyData;
+}
+
+float find_dominant_freq()
+{
+  int dominantIndex = 1; // skip k=0 as it is the average temperature, not a real temp fluctuation
+  float highestMagnitude = magnitudeData[1];
+
+  for(int k = 2; k < sampleCount; k++)
+  {
+    if(magnitudeData[k] > highestMagnitude)
+    {
+      highestMagnitude = magnitudeData[k];
+      dominantIndex = k;
+    }
+  }
+  
+  return frequencyData[dominantIndex];
+}
 
 void send_data_to_pc() 
 {
-  Serial.println("Time, Temperature");
+  Serial.println("Time, Temperature, Frequency, Magnitude");
 
   for (int i = 0; i < sampleCount; i++) 
   {
     float timeSeconds = i / samplingRateHz;
     Serial.print(timeSeconds);
-    Serial.print(",");
-    Serial.println(temperatureData[i]);
+    Serial.print(" , ");
+    Serial.print(temperatureData[i]);
+    Serial.print(" , ");
+    Serial.print(frequencyData[i]);
+    Serial.print(" , ");
+    Serial.println(magnitudeData[i]);
   }
 }
