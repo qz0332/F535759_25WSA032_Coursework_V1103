@@ -1,68 +1,119 @@
 // Loovee @ 2015-8-26
 #include <math.h>
 // grove sensor constants
-const int B = 4275; // B value of the thermistor
-const int R0 = 100000; // R0 = 100k
-const int pinTempSensor = A0; // Grove - Temperature Sensor connect to A0
+const int B = 4275;            // B value of the thermistor
+const int R0 = 100000;         // R0 = 100k
+const int pinTempSensor = A0;  // Grove - Temperature Sensor connect to A0
 
 // data collection settings
-const int sampleCount = 180;
-const float samplingRateHz = 1;
+const int sampleCount = 60;
+float samplingRateHz = 1.0; // default into active mode
 
 // list of all samples
 float temperatureData[sampleCount];
 
-void setup()
+// sample rates for each power mode
+const float activeSamplingRateHz = 1.0;
+const float idleSamplingRateHz = 0.2;
+const float powerDownSamplingRateHz = 0.03; 
+// create an enumerator in order to have the 3 power modes as constant values
+enum powerMode
+{
+  Active, 
+  Idle, 
+  Power_down
+};
+
+powerMode currentMode = Active;
+
+// just prints current mode to serial monitor
+const char* mode2string(powerMode mode)
+{
+  if(mode == Active)
+  {
+    return "Active mode";
+  }
+  else if(mode == Idle)
+  {
+    return "Idle mode";
+  }
+  else
+  {
+    return "Power down mode";
+  }
+}
+
+// declared constants for thresholds; these are used to change the power mode
+const float lowVarThreshold = 0.05;
+const float highVarThreshold = 0.20;
+
+void setup() 
 {
   Serial.begin(9600);
   delay(1000);
   Serial.println("Temperature data collection has begun:");
 }
 
-void loop()
+void loop() 
 {
   collect_temperature_data();
 
+  float averageVariation = calculate_temperature_variation();
+
+  currentMode = decideMode(averageVariation);
+
   send_data_to_pc();
 
+  updateSamplingRate(currentMode);
+
+  Serial.print("Average temperature variation: ");
+  Serial.println(averageVariation);
+  
+  Serial.print("Selected power mode & sampling rate:");
+  Serial.println(mode2string(currentMode));
+
+  Serial.print("Sampling rate for next cycle: ");
+  Serial.print(samplingRateHz);
+  Serial.println(" Hz");
+  
   Serial.println("Temperature collection cycle has finished");
   Serial.println();
-  delay(5000); // 5 second wait before collecting another block
+
+  delay(5000);  // 5 second wait before collecting another block
 }
 
-float read_temperature()
+float read_temperature() 
 {
   int rawValue = analogRead(pinTempSensor);
   // check if value read is less than zero to avoid error
-  if(rawValue <= 0)
-  {
+  if (rawValue <= 0) {
     Serial.println("Error: Invalid reading");
-    return NAN; // return 'not a number' 
+    return NAN;  // return 'not a number'
   }
   float resistance = 1023.0 / rawValue - 1.0;
   resistance = R0 * resistance;
 
-  float temperature = 1.0 / (log(resistance / R0) / B + 1.0 / 298.15) -273.15; // converting to celsius using provided info (grove)
+  float temperature = 1.0 / (log(resistance / R0) / B + 1.0 / 298.15) - 273.15;  // converting to celsius using provided info (grove)
   return temperature;
 }
 
-void collect_temperature_data()
+void collect_temperature_data() 
 {
-  unsigned int sampleInterval = 1000 / samplingRateHz;
+  unsigned int sampleInterval = 1000.0 / samplingRateHz;
   Serial.println("collecting temperature data ^-^");
 
-  for (int i=0; i<sampleCount; i++)
+  for (int i = 0; i < sampleCount; i++) 
   {
     float temperature = read_temperature();
-    if(isnan(temperature))
+    if (isnan(temperature)) 
     {
-      if(i>0) // if the sensor fails, reuse the previous values as a precaution to not get any funky changes
+      if (i > 0)  // if the sensor fails, reuse the previous values as a precaution to not get any funky changes
       {
-        temperatureData[i] = temperatureData[i-1];
+        temperatureData[i] = temperatureData[i - 1];
       } else {
         temperatureData[i] = 0.0;
       }
-    } else{ 
+    } else {
       temperatureData[i] = temperature;
     }
     Serial.print("Sample ");
@@ -73,12 +124,54 @@ void collect_temperature_data()
     delay(sampleInterval);
   }
 }
+powerMode decideMode(float averageVariation)
+{
+  if(averageVariation > highVarThreshold)
+  {
+    return Active;
+  }
+  else if(averageVariation > lowVarThreshold)
+  {
+    return Idle;
+  }
+  else
+  {
+    return Power_down;
+  }
+}
 
-void send_data_to_pc()
+void updateSamplingRate(powerMode mode)
+{
+  if(mode == Active)
+  {
+    samplingRateHz = activeSamplingRateHz;
+  }
+  else if(mode == Idle)
+  {
+    samplingRateHz = idleSamplingRateHz;
+  }
+  else
+  {
+    samplingRateHz = powerDownSamplingRateHz;
+  }
+}
+
+float calculate_temperature_variation() 
+{
+  float difference = 0.0;
+  for (int i = 1; i < sampleCount; i++) 
+  {
+    difference += fabs(temperatureData[i] - temperatureData[i - 1]);
+  }
+  return difference / (sampleCount - 1);
+}
+
+
+void send_data_to_pc() 
 {
   Serial.println("Time, Temperature");
-  
-  for(int i =0; i<sampleCount; i++)
+
+  for (int i = 0; i < sampleCount; i++) 
   {
     float timeSeconds = i / samplingRateHz;
     Serial.print(timeSeconds);
