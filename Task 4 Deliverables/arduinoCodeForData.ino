@@ -6,15 +6,15 @@ const int R0 = 100000;         // R0 = 100k
 const int pinTempSensor = A0;  // Grove - Temperature Sensor connect to A0
 
 // data collection settings
-const int sampleCount = 60;
+const int sampleCount = 180;
 float samplingRateHz = 1.0; // default into active mode
 
 // list of all samples
 float temperatureData[sampleCount];
 
-// dft arrays to display complete dft spectrum
-float frequencyData[sampleCount];
-float magnitudeData[sampleCount];
+// stores the first half of the dft spectrum (as its mirrored)
+const int dftUseful = sampleCount / 2;
+float magnitudeData[dftUseful];
 
 // sample rates for each power mode
 const float activeSamplingRateHz = 1.0;
@@ -240,9 +240,9 @@ float update_moving_average(float newVariation)
   return total / variationCount;
 }
 
-float* apply_dft()
+void apply_dft()
 {
-  for(int k=0; k < sampleCount; k++)
+  for(int k=0; k < dftUseful; k++)
   {
     float real = 0.0;
     float imaginary = 0.0;
@@ -255,9 +255,7 @@ float* apply_dft()
       imaginary -= temperatureData[n] * sin(angle);
     }
     magnitudeData[k] = sqrt(real * real+ imaginary * imaginary);
-    frequencyData[k] = (k * samplingRateHz) / sampleCount;
   }
-  return frequencyData;
 }
 
 float find_dominant_freq()
@@ -273,8 +271,7 @@ float find_dominant_freq()
       dominantIndex = k;
     }
   }
-  
-  return frequencyData[dominantIndex];
+  return (dominantIndex * samplingRateHz) / sampleCount;
 }
 
 void send_data_to_pc() 
@@ -284,14 +281,22 @@ void send_data_to_pc()
   for (int i = 0; i < sampleCount; i++) 
   {
     float timeSeconds = i / samplingRateHz;
+
     Serial.print(timeSeconds);
     Serial.print(" , ");
     Serial.print(temperatureData[i]);
     Serial.print(" , ");
-    Serial.print(frequencyData[i]);
-    Serial.print(" , ");
-    Serial.println(magnitudeData[i]);
+
+    if(i < dftUseful)
+    {
+      float frequency = (i * samplingRateHz) / sampleCount;
+      Serial.print(frequency);
+      Serial.print(" , ");
+      Serial.println(magnitudeData[i]);
+    }
+    else
+    {
+      Serial.println(" , ");
+    }
   }
 }
-
-
