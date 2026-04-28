@@ -143,11 +143,11 @@ def distance (coordinates1, coordinates2, significance = 2):
 def tabulate (blank = "-", **kwargs):
 
   rows    = kwargs.get('rows', [])
-  headers = kwargs.get('headers', [])
+  headers = list(kwargs.get('headers', []))
   title = kwargs.get('title', "Tabulated Display")
 
   print (title)
-  if rows and headers:
+  if rows:
 
     if not headers:                                                               #this is quite expensive, but works. Best solution is to be explicit with required headers.
       for row in rows:
@@ -175,32 +175,8 @@ def tabulate (blank = "-", **kwargs):
     print ("No row data or column headers to tabulate data")
 
 
-# Test
-rows = [{'kind': 'Droid', 'kind_class': 'Bot', 'coordinates': None, 'status': 'off', 'age': 0, 'alpha': 1, 'color': 'blue', 'name': 'droid'},
-        {'kind': 'Robot', 'kind_class': 'Bot', 'coordinates': None, 'status': 'off', 'age': 0, 'alpha': 1, 'color': 'red', 'name': 'robot'},
-        {'kind': 'Drone', 'kind_class': 'Bot', 'coordinates': None, 'status': 'off', 'age': 0, 'alpha': 1, 'color': 'yellow', 'name': 'drone'}]
-
-
-rows = [
-    {'kind': 'Drone', 'kind_class': 'Bot', 'coordinates': [18.83, 33.16], 'status': 'off', 'age': 0, 'alpha': 1, 'color': 'yellow', 'name': 'Drone9', 'on_arena': False, 'shape': 'triangle', 'annotation': ['name', 'status', 'soc', 'size'], 'activity': 'idle', 'active': 0, 'cargo': [], 'contracts': [], 'damage': 0, 'destination': None, 'distance': 0, 'energy': 0, 'max_payload': 22.5, 'payload': 0, 'max_soc': 180.0, 'weight_delivered': 0, 'service_freq': 720, 'serviced': 0, 'soc': 180.0, 'station': None, 'speed': 0.0, 'max_speed': 3, 'volitant': True, 'weight': 45.0, 'resources': [5, 4, 70, 1, 20, 1], 'size': 300},
-    {'kind': 'Droid', 'kind_class': 'Bot', 'coordinates': [29.41, 34.14], 'status': 'off', 'age': 0, 'alpha': 1, 'color': 'blue', 'name': 'Droid9', 'on_arena': False, 'shape': 'circle', 'annotation': ['name', 'status', 'soc', 'size'], 'activity': 'idle', 'active': 0, 'cargo': [], 'contracts': [], 'damage': 0, 'destination': None, 'distance': 0, 'energy': 0, 'max_payload': 80.0, 'payload': 0, 'max_soc': 480.0, 'weight_delivered': 0, 'service_freq': 720, 'serviced': 0, 'soc': 480.0, 'station': None, 'speed': 0.0, 'max_speed': 2, 'volitant': False, 'weight': 160.0, 'resources': [70, 4, 5, 1, 20, 1], 'size': 400},
-    {'kind': 'Robot', 'kind_class': 'Bot', 'coordinates': [35.16, 29.7], 'status': 'off', 'age': 0, 'alpha': 1, 'color': 'red', 'name': 'Robot9', 'on_arena': False, 'shape': 'square', 'annotation': ['name', 'status', 'soc', 'size'], 'activity': 'idle', 'active': 0, 'cargo': [], 'contracts': [], 'damage': 0, 'destination': None, 'distance': 0, 'energy': 0, 'max_payload': 125.0, 'payload': 0, 'max_soc': 750.0, 'weight_delivered': 0, 'service_freq': 720, 'serviced': 0, 'soc': 750.0, 'station': None, 'speed': 0.0, 'max_speed': 1, 'volitant': False, 'weight': 250.0, 'resources': [70, 4, 5, 1, 20, 1], 'size': 500},
-    {'kind': 'Charger', 'kind_class': 'Station', 'coordinates': [20, 20, 0], 'status': 'vacant', 'age': 0, 'alpha': 1, 'color': 'blue', 'name': 'charger9', 'on_arena': False, 'shape': 'diamond', 'annotation': ['status'], 'resources': [5, 4, 70, 1, 20, 1], 'capacity': 1, 'size': 400, 'start': 0},
-    {'kind': 'Pizza', 'kind_class': 'Deliverable', 'coordinates': [15.32, 17.66], 'status': 'ready', 'age': 0, 'alpha': 1, 'color': 'white', 'name': 'pizza89', 'on_arena': False, 'shape': 'circle', 'annotation': ['status'], 'destination': [69.35, 18.9], 'contractor': None, 'size': 200, 'weight': 10, 'resources': [0, 0, 0, 0, 1, 5], 'start': 0},
-    {'kind': 'Pizza', 'kind_class': 'Deliverable', 'coordinates': [13.93, 33.62], 'status': 'ready', 'age': 0, 'alpha': 1, 'color': 'white', 'name': 'pizza90', 'on_arena': False, 'shape': 'circle', 'annotation': ['status'], 'destination': [50.97, 18.89], 'contractor': None, 'size': 200, 'weight': 13, 'resources': [0, 0, 0, 0, 1, 5], 'start': 0},
-    {'kind': 'Pizza', 'kind_class': 'Deliverable', 'coordinates': [65.62, 16.78], 'status': 'ready', 'age': 0, 'alpha': 1, 'color': 'white', 'name': 'pizza91', 'on_arena': False, 'shape': 'circle', 'annotation': ['status'], 'destination': [73.75, 21.96], 'contractor': None, 'size': 200, 'weight': 13, 'resources': [0, 0, 0, 0, 1, 5], 'start': 0},
-    {'kind': 'Pizza', 'kind_class': 'Deliverable', 'coordinates': [56.3, 22.26], 'status': 'ready', 'age': 0, 'alpha': 1, 'color': 'white', 'name': 'pizza92', 'on_arena': False, 'shape': 'circle', 'annotation': ['status'], 'destination': [45.44, 21.26], 'contractor': None, 'size': 200, 'weight': 18, 'resources': [0, 0, 0, 0, 1, 5], 'start': 0},
-    {'kind': 'Pizza', 'kind_class': 'Deliverable', 'coordinates': [49.05, 2.22], 'status': 'ready', 'age': 0, 'alpha': 1, 'color': 'white', 'name': 'pizza93', 'on_arena': False, 'shape': 'circle', 'annotation': ['status'], 'destination': [59.07, 23.54], 'contractor': None, 'size': 200, 'weight': 10, 'resources': [0, 0, 0, 0, 1, 5], 'start': 0},
-    {'kind': 'Pizza', 'kind_class': 'Deliverable', 'coordinates': [45.19, 27.95], 'status': 'ready', 'age': 0, 'alpha': 1, 'color': 'white', 'name': 'pizza94', 'on_arena': False, 'shape': 'circle', 'annotation': ['status'], 'destination': [28.28, 39.06], 'contractor': None, 'size': 200, 'weight': 16, 'resources': [0, 0, 0, 0, 1, 5], 'start': 0},
-    {'kind': 'Pizza', 'kind_class': 'Deliverable', 'coordinates': [34.7, 13.99], 'status': 'ready', 'age': 0, 'alpha': 1, 'color': 'white', 'name': 'pizza95', 'on_arena': False, 'shape': 'circle', 'annotation': ['status'], 'destination': [0.01, 31.83], 'contractor': None, 'size': 200, 'weight': 19, 'resources': [0, 0, 0, 0, 1, 5], 'start': 0},
-    {'kind': 'Pizza', 'kind_class': 'Deliverable', 'coordinates': [60.52, 37.83], 'status': 'ready', 'age': 0, 'alpha': 1, 'color': 'white', 'name': 'pizza96', 'on_arena': False, 'shape': 'circle', 'annotation': ['status'], 'destination': [58.6, 25.81], 'contractor': None, 'size': 200, 'weight': 12, 'resources': [0, 0, 0, 0, 1, 5], 'start': 0},
-    {'kind': 'Pizza', 'kind_class': 'Deliverable', 'coordinates': [56.98, 29.93], 'status': 'ready', 'age': 0, 'alpha': 1, 'color': 'white', 'name': 'pizza97', 'on_arena': False, 'shape': 'circle', 'annotation': ['status'], 'destination': [11.97, 14.39], 'contractor': None, 'size': 200, 'weight': 20, 'resources': [0, 0, 0, 0, 1, 5], 'start': 0},
-    {'kind': 'Pizza', 'kind_class': 'Deliverable', 'coordinates': [1.49, 38.29], 'status': 'ready', 'age': 0, 'alpha': 1, 'color': 'white', 'name': 'pizza98', 'on_arena': False, 'shape': 'circle', 'annotation': ['status'], 'destination': [71.79, 15.46], 'contractor': None, 'size': 200, 'weight': 16, 'resources': [0, 0, 0, 0, 1, 5], 'start': 0},
-    {'kind': 'Pizza', 'kind_class': 'Deliverable', 'coordinates': [53.33, 9.3], 'status': 'ready', 'age': 0, 'alpha': 1, 'color': 'white', 'name': 'pizza99', 'on_arena': False, 'shape': 'circle', 'annotation': ['status'], 'destination': [20.64, 16.03], 'contractor': None, 'size': 200, 'weight': 20, 'resources': [0, 0, 0, 0, 1, 5], 'start': 0}
-]
-
-
-tabulate (blank = "nul", rows = rows, headersX = ['kind', 'name', 'status', 'age', 'soc', 'capacity'])
+# Test data commented out - was running at import time
+# tabulate (blank = "nul", rows = rows, headersX = ['kind', 'name', 'status', 'age', 'soc', 'capacity'])
 
 #@title Energy Consumption Factors
 
@@ -1111,7 +1087,8 @@ class Ecosystem:
     '''
     title = kwargs.pop('title', "Tabulated Data")
     rows =  list(self.registry(  **kwargs).values())                              # convert to a list otherwise we have a dicvalue generator object
-    tabulate (headers = attributes, rows = rows, title = title)
+    headers = list(attributes) or (list(rows[0].keys()) if rows else [])          # derive headers from first row if none specified
+    tabulate (headers = headers, rows = rows, title = title)
 
 
   #   Things and related lists (Method)
