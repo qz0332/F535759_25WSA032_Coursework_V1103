@@ -1,4 +1,3 @@
-// Loovee @ 2015-8-26
 #include <math.h>
 // grove sensor constants
 const int B = 4275;            // B value of the thermistor
@@ -6,7 +5,7 @@ const int R0 = 100000;         // R0 = 100k
 const int pinTempSensor = A0;  // Grove - Temperature Sensor connect to A0
 
 // data collection settings
-const int sampleCount = 180;
+const int sampleCount = 60;
 float samplingRateHz = 1.0; // default into active mode
 
 // list of all samples
@@ -22,6 +21,8 @@ const float idleSamplingRateHz = 0.2;
 const float powerDownSamplingRateHz = 0.03; 
 
 float dominantFrequency = 0.0;
+
+float frequencyData[dftUseful];
 
 // create an enumerator in order to have the 3 power modes as constant values
 enum powerMode
@@ -80,7 +81,7 @@ void loop()
   predictedVariation = update_moving_average(averageVariation);
 
 
-  apply_dft();
+  float* frequencies = apply_dft();
   dominantFrequency = find_dominant_freq();
 
   currentMode = decide_power_mode(predictedVariation, dominantFrequency);
@@ -100,7 +101,7 @@ void loop()
   Serial.println(mode2string(currentMode));
 
   Serial.print("Sampling rate for next cycle: ");
-  Serial.print(samplingRateHz);
+  Serial.print(samplingRateHz); 
   Serial.println(" Hz");
   
   Serial.print("Predicted variation trend: ");
@@ -240,14 +241,14 @@ float update_moving_average(float newVariation)
   return total / variationCount;
 }
 
-void apply_dft()
+float* apply_dft()
 {
   for(int k=0; k < dftUseful; k++)
   {
     float real = 0.0;
     float imaginary = 0.0;
 
-    for(int n =0; n < sampleCount; n++)
+    for(int n = 0; n < sampleCount; n++)
     {
       float angle = 2.0 * PI * k * n / sampleCount;
 
@@ -255,7 +256,10 @@ void apply_dft()
       imaginary -= temperatureData[n] * sin(angle);
     }
     magnitudeData[k] = sqrt(real * real+ imaginary * imaginary);
+    frequencyData[k] = (k * samplingRateHz) / sampleCount;
   }
+
+  return frequencyData;
 }
 
 float find_dominant_freq()
@@ -263,7 +267,7 @@ float find_dominant_freq()
   int dominantIndex = 1; // skip k=0 as it is the average temperature, not a real temp fluctuation
   float highestMagnitude = magnitudeData[1];
 
-  for(int k = 2; k < sampleCount; k++)
+  for(int k = 2; k < dftUseful; k++)
   {
     if(magnitudeData[k] > highestMagnitude)
     {
