@@ -23,7 +23,7 @@ temperatures = []
 frequencies = []
 magnitudes = []
 
-csv_file = "/Users/sk/Code/F535759_25WSA032_Coursework_V1103/Task 4 Deliverables/task4data.csv"
+csv_file = "task4data.csv" # path to the csv file containg data. might not work on on other machines, meaning it may need to be adjusted
 
 # reading data from csv and inserting it into the lists
 with open(csv_file, 'r', newline="") as f:
